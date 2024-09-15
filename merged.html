@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combined Calculators</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #calculator-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #555;
+        }
+
+        select,
+        button,
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #output {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #4CAF50;
+            border-radius: 5px 5px 0 0;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .tab button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+            flex-grow: 1;
+            color: white;
+        }
+
+        .tab button:hover {
+            background-color: #45a049;
+        }
+
+        .tab button.active {
+            background-color: #3e8e41;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .tabcontent.active {
+            display: block;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div id="calculator-form">
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding
+                Diameter</button>
+            <button class="tablinks" onclick="openTab(event, 'SplicingDiameter')">Splicing Diameter</button>
+            <button class="tablinks" onclick="openTab(event, 'TimeForPrint')">Time for Print</button>
+        </div>
+
+        <div id="WindingDiameter" class="tabcontent">
+            <h1>Winding Diameter Calculator</h1>
+            <label for="material">Material:</label>
+            <select id="material" name="material" onchange="setThickness()">
+                <option value="BOPP">BOPP</option>
+                <option value="Film">Film</option>
+                <option value="Paper">Paper</option>
+                <option value="Estate">Estate</option>
+            </select>
+            <label for="thickness">Thickness (inches):</label>
+            <input type="number" id="thickness" name="thickness" step="0.001">
+            <label for="core">Core (inches):</label>
+            <select id="core" name="core">
+                <option value="3">3</option>
+                <option value="6">6</option>
+            </select>
+            <label for="labels"># of Labels:</label>
+            <input type="number" id="labels" name="labels">
+            <label for="length">Length of Labels (inches):</label>
+            <input type="number" id="length" name="length" step="0.001">
+            <button type="button" onclick="calculateWindingDiameter()">Calculate</button>
+            <div id="winding-output"></div>
+        </div>
+
+        <div id="SplicingDiameter" class="tabcontent">
+            <h1>Splicing Diameter Calculator</h1>
+            <label for="roll1">Roll 1:</label>
+            <select id="roll1" name="roll1">
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+            </select>
+            <label for="roll2">Roll 2:</label>
+            <select id="roll2" name="roll2">
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+            </select>
+            <button type="button" onclick="calculateSplicingDiameter()">Calculate</button>
+            <div id="splicing-output"></div>
+        </div>
+
+        <div id="TimeForPrint" class="tabcontent">
+            <h1>HP Time for Print Calculator</h1>
+            <label for="copies">Copies:</label>
+            <input type="number" id="copies" name="copies">
+            <label for="color">Color:</label>
+            <input type="number" id="color" name="color">
+            <button type="button" onclick="calculateTimeForPrint()">Calculate</button>
+            <div id="print-output"></div>
+        </div>
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        document.getElementById("defaultOpen").click();
+
+        function setThickness() {
+            const materialSelect = document.getElementById('material');
+            const thicknessInput = document.getElementById('thickness');
+            const selectedMaterial = materialSelect.value;
+
+            if (selectedMaterial === 'BOPP') {
+                thicknessInput.value = 0.004;
+            } else if (selectedMaterial === 'Film') {
+                thicknessInput.value = 0.005;
+            } else if (selectedMaterial === 'Paper') {
+                thicknessInput.value = 0.006;
+            } else if (selectedMaterial === 'Estate') {
+                thicknessInput.value = 0.007;
+            }
+        }
+
+        function calculateWindingDiameter() {
+            const thickness = parseFloat(document.getElementById('thickness').value);
+            const core = parseFloat(document.getElementById('core').value);
+            const labels = parseFloat(document.getElementById('labels').value);
+            const length = parseFloat(document.getElementById('length').value);
+
+            if (!isNaN(thickness) && !isNaN(core) && !isNaN(labels) && !isNaN(length)) {
+                const rollDiameter = Math.sqrt((core ** 2) + (4 * (thickness * length * labels / Math.PI)));
+                document.getElementById('winding-output').textContent = `Size of Roll: ${rollDiameter.toFixed(2)}`;
+            } else {
+                document.getElementById('winding-output').textContent = 'Please enter valid values for all parameters.';
+            }
+        }
+
+        let combinedDiameters = {};
+
+        function arrayBufferToString(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return binary;
+        }
+
+        function parseExcelData(data) {
+            const binaryString = arrayBufferToString(data);
+            const workbook = XLSX.read(binaryString, { type: 'binary' });
+            const sheetName = workbook.SheetNames[1];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            rows.forEach((row, rowIndex) => {
+                if (rowIndex === 0) return;
+                const roll1 = row[0];
+                row.forEach((cell, colIndex) => {
+                    if (colIndex === 0 || cell === undefined) return;
+                    const roll2 = rows[0][colIndex];
+                    const combinedDiameter = cell;
+
+                    if (!combinedDiameters[roll1]) {
+                        combinedDiameters[roll1] = {};
+                    }
+                    combinedDiameters[roll1][roll2] = combinedDiameter;
+                });
+            });
+        }
+
+        function calculateSplicingDiameter() {
+            const roll1Value = parseInt(document.getElementById('roll1').value, 10);
+            const roll2Value = parseInt(document.getElementById('roll2').value, 10);
+
+            if (combinedDiameters[roll1Value] && combinedDiameters[roll1Value][roll2Value] !== undefined) {
+                const combinedDiameter = combinedDiameters[roll1Value][roll2Value];
+                document.getElementById('splicing-output').textContent = `Combined diameter: ${combinedDiameter.toFixed(2)}`;
+            } else {
+                document.getElementById('splicing-output').textContent = 'No data available for the selected combination.';
+            }
+        }
+
+        function calculateTimeForPrint() {
+            const copies = parseFloat(document.getElementById('copies').value);
+            const color = parseFloat(document.getElementById('color').value);
+
+            if (!isNaN(copies) && !isNaN(color)) {
+                const length = (copies * color) / 60;
+                document.getElementById('print-output').textContent = `Time: ${length.toFixed(2)} minutes`;
+            } else {
+                document.getElementById('print-output').textContent = 'Please enter valid values for copies and color.';
+            }
+        }
+
+        fetch('Splicing Diameters - Copy.xlsx')
+            .then(response => response.arrayBuffer())
+            .then(data => {
+                parseExcelData(data);
+            })
+            .catch(error => console.error('Error loading Excel data:', error));
+
+        fetch('TimeForPrint.xlsx')
+            .then(response => response.arrayBuffer())
+            .then(data => {
+                // Handle the TimeForPrint.xlsx file if necessary
+                // For this example, it is not necessary to parse the file since the formula is simple
+            })
+            .catch(error => console.error('Error loading TimeForPrint data:', error));
+    </script>
+</body>
+
+</html>

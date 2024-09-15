@@ -1,0 +1,15 @@
+runtime: python39  # Using Python runtime
+
+handlers:
+- url: /
+  static_files: merged.html
+  upload: merged.html
+
+- url: /service-worker.js
+  static_files: service-worker.js
+  upload: service-worker.js
+
+- url: /(.*)
+  static_files: \1
+  upload: (.*)
+
