@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Combined Calculators</title>
     <link rel="manifest" href="manifest.json">
+    <!-- External XLSX library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js" defer></script>
+    <!-- Link to the service worker JavaScript file -->
+    <script src="service-worker.js" defer></script>
+    
+    <!-- Correct CSS styles -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -109,14 +115,12 @@
             display: block;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 
 <body>
     <div id="calculator-form">
         <div class="tab">
-            <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding
-                Diameter</button>
+            <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding Diameter</button>
             <button class="tablinks" onclick="openTab(event, 'SplicingDiameter')">Splicing Diameter</button>
             <button class="tablinks" onclick="openTab(event, 'TimeForPrint')">Time for Print</button>
         </div>
@@ -190,37 +194,42 @@
         </div>
     </div>
 
+    <!-- JavaScript for managing tabs and calculations -->
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById("defaultOpen").click();
+        });
+
         function openTab(evt, tabName) {
             let i, tabcontent, tablinks;
+
             tabcontent = document.getElementsByClassName("tabcontent");
             for (i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
+
             tablinks = document.getElementsByClassName("tablinks");
             for (i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
+
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
-
-        document.getElementById("defaultOpen").click();
 
         function setThickness() {
             const materialSelect = document.getElementById('material');
             const thicknessInput = document.getElementById('thickness');
             const selectedMaterial = materialSelect.value;
 
-            if (selectedMaterial === 'BOPP') {
-                thicknessInput.value = 0.004;
-            } else if (selectedMaterial === 'Film') {
-                thicknessInput.value = 0.005;
-            } else if (selectedMaterial === 'Paper') {
-                thicknessInput.value = 0.006;
-            } else if (selectedMaterial === 'Estate') {
-                thicknessInput.value = 0.007;
-            }
+            const thicknessValues = {
+                'BOPP': 0.004,
+                'Film': 0.003,
+                'Paper': 0.007,
+                'Estate': 0.009
+            };
+
+            thicknessInput.value = thicknessValues[selectedMaterial] || '';
         }
 
         function calculateWindingDiameter() {
@@ -229,56 +238,21 @@
             const labels = parseFloat(document.getElementById('labels').value);
             const length = parseFloat(document.getElementById('length').value);
 
-            if (!isNaN(thickness) && !isNaN(core) && !isNaN(labels) && !isNaN(length)) {
-                const rollDiameter = Math.sqrt((core ** 2) + (4 * (thickness * length * labels / Math.PI)));
-                document.getElementById('winding-output').textContent = `Size of Roll: ${rollDiameter.toFixed(2)}`;
-            } else {
+            if (isNaN(thickness) || isNaN(core) || isNaN(labels) || isNaN(length)) {
                 document.getElementById('winding-output').textContent = 'Please enter valid values for all parameters.';
+            } else {
+                const rollDiameter = Math.sqrt((core ** 2) + (4 * (thickness * length * labels) / Math.PI));
+                document.getElementById('winding-output').textContent = `Size of Roll: ${rollDiameter.toFixed(2)} inches`;
             }
-        }
-
-        let combinedDiameters = {};
-
-        function arrayBufferToString(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return binary;
-        }
-
-        function parseExcelData(data) {
-            const binaryString = arrayBufferToString(data);
-            const workbook = XLSX.read(binaryString, { type: 'binary' });
-            const sheetName = workbook.SheetNames[1];
-            const sheet = workbook.Sheets[sheetName];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-            rows.forEach((row, rowIndex) => {
-                if (rowIndex === 0) return;
-                const roll1 = row[0];
-                row.forEach((cell, colIndex) => {
-                    if (colIndex === 0 || cell === undefined) return;
-                    const roll2 = rows[0][colIndex];
-                    const combinedDiameter = cell;
-
-                    if (!combinedDiameters[roll1]) {
-                        combinedDiameters[roll1] = {};
-                    }
-                    combinedDiameters[roll1][roll2] = combinedDiameter;
-                });
-            });
         }
 
         function calculateSplicingDiameter() {
-            const roll1Value = parseInt(document.getElementById('roll1').value, 10);
-            const roll2Value = parseInt(document.getElementById('roll2').value, 10);
+            const roll1Value = document.getElementById('roll1').value;
+            const roll2Value = document.getElementById('roll2').value;
 
             if (combinedDiameters[roll1Value] && combinedDiameters[roll1Value][roll2Value] !== undefined) {
                 const combinedDiameter = combinedDiameters[roll1Value][roll2Value];
-                document.getElementById('splicing-output').textContent = `Combined diameter: ${combinedDiameter.toFixed(2)}`;
+                document.getElementById('splicing-output').textContent = `Combined Diameter: ${combinedDiameter.toFixed(2)} inches`;
             } else {
                 document.getElementById('splicing-output').textContent = 'No data available for the selected combination.';
             }
@@ -295,21 +269,6 @@
                 document.getElementById('print-output').textContent = 'Please enter valid values for copies and color.';
             }
         }
-
-        fetch('Splicing Diameters - Copy.xlsx')
-            .then(response => response.arrayBuffer())
-            .then(data => {
-                parseExcelData(data);
-            })
-            .catch(error => console.error('Error loading Excel data:', error));
-
-        fetch('TimeForPrint.xlsx')
-            .then(response => response.arrayBuffer())
-            .then(data => {
-                // Handle the TimeForPrint.xlsx file if necessary
-                // For this example, it is not necessary to parse the file since the formula is simple
-            })
-            .catch(error => console.error('Error loading TimeForPrint data:', error));
     </script>
 </body>
 
