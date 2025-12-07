@@ -4,75 +4,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Combined Calculators</title>
+    <title>Spliceroll Calculators</title>
     <link rel="manifest" href="manifest.json">
     <style>
+        /* Base Styling */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e8e8e8;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start; /* Align to top for better scrolling */
+            min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 20px 10px;
             box-sizing: border-box;
         }
 
         #calculator-form {
             background-color: #fff;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
             width: 100%;
+            margin-top: 5vh;
         }
 
         h1 {
             text-align: center;
-            color: #333;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        /* Unit Toggle Styling */
+        .unit-toggle-container {
+            text-align: center;
+            margin-bottom: 15px;
         }
 
+        .unit-toggle {
+            display: inline-flex;
+            background-color: #f0f0f0;
+            border-radius: 50px;
+            padding: 5px;
+        }
+
+        .unit-toggle button {
+            all: unset;
+            padding: 8px 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .unit-toggle button.active {
+            background-color: #28a745;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Form Controls */
         label {
             display: block;
-            margin: 10px 0 5px;
+            margin: 15px 0 5px;
             color: #555;
+            font-weight: bold;
         }
 
         select,
-        button,
-        input {
+        input:not([type="radio"]) {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
         }
 
-        button {
+        input:focus, select:focus {
+            border-color: #28a745;
+            outline: none;
+        }
+
+        button.calculate-btn {
             background-color: #28a745;
             color: #fff;
             border: none;
             cursor: pointer;
+            padding: 12px 0;
+            margin-top: 20px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: background-color 0.3s;
         }
 
-        button:hover {
+        button.calculate-btn:hover {
             background-color: #218838;
         }
 
-        #output {
-            font-size: 24px;
+        /* Output Styling */
+        .output {
+            font-size: 1.6em;
             font-weight: bold;
-            color: #333;
+            color: #2c3e50;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f7f7f7;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
         }
 
+        .output span {
+            color: #28a745;
+        }
+
+        /* Tab Styling */
         .tab {
             overflow: hidden;
-            border: 1px solid #ccc;
-            background-color: #4CAF50;
-            border-radius: 5px 5px 0 0;
+            border-bottom: 2px solid #ccc;
             display: flex;
             justify-content: space-around;
         }
@@ -82,31 +138,50 @@
             border: none;
             outline: none;
             cursor: pointer;
-            padding: 14px 16px;
+            padding: 14px 10px;
             transition: 0.3s;
-            font-size: 17px;
+            font-size: 1em;
             flex-grow: 1;
-            color: white;
+            color: #555;
+            border-bottom: 3px solid transparent;
         }
 
         .tab button:hover {
-            background-color: #45a049;
+            background-color: #f1f1f1;
         }
 
         .tab button.active {
-            background-color: #3e8e41;
+            color: #28a745;
+            border-bottom: 3px solid #28a745;
+            font-weight: bold;
         }
 
         .tabcontent {
             display: none;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-top: none;
-            border-radius: 0 0 5px 5px;
+            padding: 10px 0;
         }
 
         .tabcontent.active {
             display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            #calculator-form {
+                margin-top: 2vh;
+                padding: 15px;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .tab button {
+                padding: 12px 5px;
+                font-size: 0.9em;
+            }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
@@ -114,131 +189,286 @@
 
 <body>
     <div id="calculator-form">
+        <div class="unit-toggle-container">
+            <div class="unit-toggle">
+                <button id="unit-imperial" class="active" onclick="setUnits('imperial')">Inches</button>
+                <button id="unit-metric" onclick="setUnits('metric')">MM</button>
+            </div>
+        </div>
+
         <div class="tab">
-            <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding
-                Diameter</button>
-            <button class="tablinks" onclick="openTab(event, 'SplicingDiameter')">Splicing Diameter</button>
-            <button class="tablinks" onclick="openTab(event, 'TimeForPrint')">Time for Print</button>
+            <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding</button>
+            <button class="tablinks" onclick="openTab(event, 'SplicingDiameter')">Splicing</button>
+            <button class="tablinks" onclick="openTab(event, 'TimeForPrint')">Run Time</button>
         </div>
 
         <div id="WindingDiameter" class="tabcontent">
-            <h1>Winding Diameter Calculator</h1>
+            <h1>Roll Size Calculator</h1>
             <label for="material">Material:</label>
             <select id="material" name="material" onchange="setThickness()">
-                <option value="BOPP">BOPP</option>
-                <option value="Film">Film</option>
+                <option value="BOPP">BOPP Film</option>
                 <option value="Paper">Paper</option>
+                <option value="Film">Film</option>
                 <option value="Estate">Estate</option>
             </select>
-            <label for="thickness">Thickness (inches):</label>
-            <input type="number" id="thickness" name="thickness" step="0.001">
-            <label for="core">Core (inches):</label>
+            <label for="thickness"><span id="thickness-label">Thickness (inches)</span>:</label>
+            <input type="number" id="thickness" name="thickness" step="0.001" value="0.004">
+
+            <label for="core"><span id="core-label">Core Diameter (inches)</span>:</label>
             <select id="core" name="core">
                 <option value="3">3</option>
                 <option value="6">6</option>
             </select>
-            <label for="labels"># of Labels:</label>
-            <input type="number" id="labels" name="labels">
-            <label for="length">Length of Labels (inches):</label>
-            <input type="number" id="length" name="length" step="0.001">
-            <button type="button" onclick="calculateWindingDiameter()">Calculate</button>
-            <div id="winding-output"></div>
+
+            <label>Input By:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="radio" id="input-labels" name="input-mode" value="labels" checked style="width: auto;" onclick="toggleInputMode('labels')">
+                <label for="input-labels" style="flex: 1; margin: 0; font-weight: normal;">Label Count</label>
+                <input type="radio" id="input-length" name="input-mode" value="length" style="width: auto;" onclick="toggleInputMode('length')">
+                <label for="input-length" style="flex: 1; margin: 0; font-weight: normal;">Total Length</label>
+            </div>
+
+            <div id="labels-input-group">
+                <label for="labels"># of Labels:</label>
+                <input type="number" id="labels" name="labels" step="1" value="">
+                <label for="length"><span id="length-label">Length of Labels (inches)</span>:</label>
+                <input type="number" id="length" name="length" step="0.001" value="">
+            </div>
+
+            <div id="total-length-input-group" style="display: none;">
+                <label for="total-length"><span id="total-length-label">Total Material Length (feet)</span>:</label>
+                <input type="number" id="total-length" name="total-length" step="1" value="">
+            </div>
+
+
+            <button type="button" class="calculate-btn" onclick="calculateWindingDiameter()">Calculate Roll Size</button>
+            <div id="winding-output" class="output"></div>
         </div>
 
         <div id="SplicingDiameter" class="tabcontent">
-            <h1>Splicing Diameter Calculator</h1>
-            <label for="roll1">Roll 1:</label>
+            <h1>Minimum Combined Diameter</h1>
+            <p style="text-align: center; color: #777;">Find the smallest roll diameter needed to splice two current rolls together to run uninterrupted.</p>
+            <label for="roll1"><span id="roll1-label">Roll 1 Diameter (inches)</span>:</label>
             <select id="roll1" name="roll1">
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
-                <option value="13">13</option>
-                <option value="14">14</option>
-                <option value="15">15</option>
+                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
             </select>
-            <label for="roll2">Roll 2:</label>
+            <label for="roll2"><span id="roll2-label">Roll 2 Diameter (inches)</span>:</label>
             <select id="roll2" name="roll2">
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
-                <option value="13">13</option>
-                <option value="14">14</option>
-                <option value="15">15</option>
+                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
             </select>
-            <button type="button" onclick="calculateSplicingDiameter()">Calculate</button>
-            <div id="splicing-output"></div>
+            <button type="button" class="calculate-btn" onclick="calculateSplicingDiameter()">Calculate Combined Diameter</button>
+            <div id="splicing-output" class="output"></div>
         </div>
 
         <div id="TimeForPrint" class="tabcontent">
-            <h1>HP Time for Print Calculator</h1>
+            <h1>Job Run Time Estimator</h1>
+            <p style="text-align: center; color: #777;">Estimate the total time for a print job.</p>
             <label for="copies">Copies:</label>
-            <input type="number" id="copies" name="copies">
-            <label for="color">Color:</label>
-            <input type="number" id="color" name="color">
-            <button type="button" onclick="calculateTimeForPrint()">Calculate</button>
-            <div id="print-output"></div>
+            <input type="number" id="copies" name="copies" step="1" value="">
+            
+            <label for="repeat-length"><span id="repeat-label">Label Repeat Length (inches)</span>:</label>
+            <input type="number" id="repeat-length" name="repeat-length" step="0.001" value="">
+            
+            <label for="color">Number of Colors (Stations):</label>
+            <input type="number" id="color" name="color" step="1" value="">
+            
+            <label for="press-speed"><span id="speed-label">Press Speed (FPM)</span>:</label>
+            <input type="number" id="press-speed" name="press-speed" step="1" value="">
+
+            <label for="setup-time">Estimated Setup/Washup Time (minutes):</label>
+            <input type="number" id="setup-time" name="setup-time" step="1" value="30">
+
+            <button type="button" class="calculate-btn" onclick="calculateTimeForPrint()">Calculate Total Time</button>
+            <div id="print-output" class="output"></div>
         </div>
     </div>
 
     <script>
-        function openTab(evt, tabName) {
-            let i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
+        // --- CONSTANTS AND GLOBAL STATE ---
+        let currentUnit = 'imperial';
+        const INCHES_TO_MM = 25.4;
+        const METERS_TO_FEET = 3.28084;
+
+        // Thickness values based on WindingDiameters.xlsx - Specs.csv
+        const MATERIAL_THICKNESS = {
+            'Film': 0.0027, // inches
+            'BOPP': 0.004,  // inches
+            'Paper': 0.005, // inches
+            'Estate': 0.009  // inches
+        };
+
+        let combinedDiameters = {}; // For Splicing Calculator lookup table
+
+        // --- UNIT CONVERSION LOGIC ---
+        function updateLabels() {
+            const unitText = currentUnit === 'imperial' ? 'inches' : 'mm';
+            const lengthText = currentUnit === 'imperial' ? 'Length of Labels (inches)' : 'Length of Labels (mm)';
+            const totalLengthText = currentUnit === 'imperial' ? 'Total Material Length (feet)' : 'Total Material Length (meters)';
+            const repeatText = currentUnit === 'imperial' ? 'Label Repeat Length (inches)' : 'Label Repeat Length (mm)';
+            const speedText = currentUnit === 'imperial' ? 'Press Speed (FPM)' : 'Press Speed (MPM)';
+
+            // Winding Diameter Labels
+            document.getElementById('thickness-label').textContent = `Thickness (${unitText})`;
+            document.getElementById('core-label').textContent = `Core Diameter (${unitText})`;
+            document.getElementById('length-label').textContent = lengthText;
+            document.getElementById('total-length-label').textContent = totalLengthText;
+
+            // Splicing Diameter Labels
+            document.getElementById('roll1-label').textContent = `Roll 1 Diameter (${unitText})`;
+            document.getElementById('roll2-label').textContent = `Roll 2 Diameter (${unitText})`;
+
+            // Time for Print Labels
+            document.getElementById('repeat-label').textContent = repeatText;
+            document.getElementById('speed-label').textContent = speedText;
         }
 
-        document.getElementById("defaultOpen").click();
+        function setUnits(unit) {
+            // Do nothing if unit is already set
+            if (currentUnit === unit) return;
 
-        function setThickness() {
+            // Clear outputs before conversion
+            document.getElementById('winding-output').innerHTML = '';
+            document.getElementById('splicing-output').innerHTML = '';
+            document.getElementById('print-output').innerHTML = '';
+
+            // Update UI buttons
+            document.getElementById('unit-imperial').classList.remove('active');
+            document.getElementById('unit-metric').classList.remove('active');
+            document.getElementById(`unit-${unit}`).classList.add('active');
+
+            // --- VALUE CONVERSION ---
+            const fields = [
+                { id: 'thickness', isLength: true },
+                { id: 'length', isLength: true },
+                { id: 'core', isLength: true, isSelect: true },
+                { id: 'total-length', isLength: true, isTotalLength: true },
+                { id: 'repeat-length', isLength: true },
+                { id: 'press-speed', isSpeed: true },
+            ];
+            
+            const conversionFactor = (unit === 'metric') ? INCHES_TO_MM : (1 / INCHES_TO_MM);
+            const lengthConversionFactor = (unit === 'metric') ? (INCHES_TO_MM * 12) : (1 / (INCHES_TO_MM * 12)); // Feet to Meters (or vice versa)
+
+            fields.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element && element.value !== '') {
+                    let val = parseFloat(element.value);
+                    if (!isNaN(val)) {
+                        if (field.isLength) {
+                            if (field.isTotalLength) {
+                                // Total length conversion: Feet to Meters or Meters to Feet
+                                val = (unit === 'metric') ? val / METERS_TO_FEET : val * METERS_TO_FEET;
+                            } else {
+                                // Simple length conversion (in/mm)
+                                val *= conversionFactor;
+                            }
+                        } else if (field.isSpeed) {
+                             // Speed conversion: FPM to MPM (1 FPM = 0.3048 MPM)
+                            val = (unit === 'metric') ? val * 0.3048 : val / 0.3048;
+                        }
+                        element.value = val.toFixed(field.id === 'thickness' ? 4 : 2);
+                    }
+                }
+                
+                // For Core Select, convert option values and re-select
+                if (field.isSelect) {
+                    const options = element.options;
+                    for (let i = 0; i < options.length; i++) {
+                        let val = parseFloat(options[i].value);
+                        if (!isNaN(val)) {
+                            // Simple length conversion (in/mm)
+                            val *= conversionFactor;
+                            options[i].value = val.toFixed(1);
+                            options[i].textContent = val.toFixed(1);
+                        }
+                    }
+                }
+            });
+
+            // Update material thickness defaults
+            setThickness(unit); 
+
+            currentUnit = unit;
+            updateLabels();
+        }
+
+        // --- Winding Diameter Functions ---
+        function setThickness(unit = currentUnit) {
             const materialSelect = document.getElementById('material');
             const thicknessInput = document.getElementById('thickness');
             const selectedMaterial = materialSelect.value;
+            let val = MATERIAL_THICKNESS[selectedMaterial] || 0.004;
 
-            if (selectedMaterial === 'BOPP') {
-                thicknessInput.value = 0.004;
-            } else if (selectedMaterial === 'Film') {
-                thicknessInput.value = 0.005;
-            } else if (selectedMaterial === 'Paper') {
-                thicknessInput.value = 0.006;
-            } else if (selectedMaterial === 'Estate') {
-                thicknessInput.value = 0.007;
+            if (unit === 'metric') {
+                val = val * INCHES_TO_MM;
+                thicknessInput.value = val.toFixed(3);
+            } else {
+                thicknessInput.value = val.toFixed(4);
             }
+        }
+
+        function toggleInputMode(mode) {
+            document.getElementById('labels-input-group').style.display = (mode === 'labels') ? 'block' : 'none';
+            document.getElementById('total-length-input-group').style.display = (mode === 'length') ? 'block' : 'none';
         }
 
         function calculateWindingDiameter() {
-            const thickness = parseFloat(document.getElementById('thickness').value);
-            const core = parseFloat(document.getElementById('core').value);
-            const labels = parseFloat(document.getElementById('labels').value);
-            const length = parseFloat(document.getElementById('length').value);
+            let thickness = parseFloat(document.getElementById('thickness').value);
+            let core = parseFloat(document.getElementById('core').value);
+            
+            const isLabelMode = document.getElementById('input-labels').checked;
+            let totalLength = 0; // The required value is total length in inches
 
-            if (!isNaN(thickness) && !isNaN(core) && !isNaN(labels) && !isNaN(length)) {
-                const rollDiameter = Math.sqrt((core ** 2) + (4 * (thickness * length * labels / Math.PI)));
-                document.getElementById('winding-output').textContent = `Size of Roll: ${rollDiameter.toFixed(2)}`;
+            if (isLabelMode) {
+                const labels = parseFloat(document.getElementById('labels').value);
+                let length = parseFloat(document.getElementById('length').value);
+                
+                if (currentUnit === 'metric') {
+                    length = length / INCHES_TO_MM; // Convert mm back to inches
+                }
+                totalLength = length * labels; // Total Length in Inches
             } else {
+                let totalLengthFeet = parseFloat(document.getElementById('total-length').value);
+                
+                if (currentUnit === 'metric') {
+                    // Total Length is in meters, convert to feet
+                    totalLengthFeet = totalLengthFeet * METERS_TO_FEET;
+                }
+                
+                totalLength = totalLengthFeet * 12; // Total Length in Inches
+            }
+
+            if (isNaN(thickness) || isNaN(core) || isNaN(totalLength)) {
                 document.getElementById('winding-output').textContent = 'Please enter valid values for all parameters.';
+                return;
+            }
+
+            if (currentUnit === 'metric') {
+                thickness = thickness / INCHES_TO_MM; // Convert mm back to inches
+                core = core / INCHES_TO_MM; // Convert mm back to inches
+            }
+
+            // Formula: D = sqrt( C^2 + (4 * L_total * T) / PI )
+            const rollDiameter = Math.sqrt((core ** 2) + (4 * totalLength * thickness / Math.PI));
+
+            let finalDiameter = rollDiameter;
+            let unitOutput = 'inches';
+            if (currentUnit === 'metric') {
+                finalDiameter = rollDiameter * INCHES_TO_MM;
+                unitOutput = 'mm';
+            }
+            
+            document.getElementById('winding-output').innerHTML = `Roll Size: <span>${finalDiameter.toFixed(2)} ${unitOutput}</span>`;
+            
+            // Revert core value change for future calculations if we were in metric
+            if (currentUnit === 'metric') {
+                 // Note: The core select options were converted on setUnits, they stay in MM now.
             }
         }
 
-        let combinedDiameters = {};
-
+        // --- Splicing Diameter Functions ---
         function arrayBufferToString(buffer) {
             let binary = '';
             const bytes = new Uint8Array(buffer);
@@ -252,16 +482,20 @@
         function parseExcelData(data) {
             const binaryString = arrayBufferToString(data);
             const workbook = XLSX.read(binaryString, { type: 'binary' });
-            const sheetName = workbook.SheetNames[1];
+            // Using the raw data sheet for simplicity, assuming it's the second sheet (index 1) or third sheet (index 2)
+            // The file Splicing Diameters - Copy.xlsx - Combined_Diameter_LUT.csv shows the raw data table is needed
+            // The user's original code uses sheet index 1.
+            const sheetName = workbook.SheetNames[1]; 
             const sheet = workbook.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+            // This structure expects the table where roll diameters are both headers (row 0) and first column (col 0)
             rows.forEach((row, rowIndex) => {
-                if (rowIndex === 0) return;
+                if (rowIndex === 0) return; // Skip header row
                 const roll1 = row[0];
                 row.forEach((cell, colIndex) => {
-                    if (colIndex === 0 || cell === undefined) return;
-                    const roll2 = rows[0][colIndex];
+                    if (colIndex === 0 || cell === undefined) return; // Skip first column and empty cells
+                    const roll2 = rows[0][colIndex]; // Get roll2 value from header row
                     const combinedDiameter = cell;
 
                     if (!combinedDiameters[roll1]) {
@@ -276,40 +510,105 @@
             const roll1Value = parseInt(document.getElementById('roll1').value, 10);
             const roll2Value = parseInt(document.getElementById('roll2').value, 10);
 
+            // Note: The table is in inches. We assume the lookup is always done with imperial values (5, 6, 7...) 
+            // regardless of the displayed unit, as the select options for splicing were not converted in setUnits().
+            // If the user selects a converted MM value, this lookup will fail.
+            // For now, we will look up the original values (5-15) as provided in the HTML.
+            
             if (combinedDiameters[roll1Value] && combinedDiameters[roll1Value][roll2Value] !== undefined) {
-                const combinedDiameter = combinedDiameters[roll1Value][roll2Value];
-                document.getElementById('splicing-output').textContent = `Combined diameter: ${combinedDiameter.toFixed(2)}`;
+                let combinedDiameter = combinedDiameters[roll1Value][roll2Value];
+                let unitOutput = 'inches';
+                
+                if (currentUnit === 'metric') {
+                    combinedDiameter *= INCHES_TO_MM; // Convert result to MM
+                    unitOutput = 'mm';
+                }
+                
+                document.getElementById('splicing-output').innerHTML = `Combined Diameter: <span>${combinedDiameter.toFixed(2)} ${unitOutput}</span>`;
             } else {
                 document.getElementById('splicing-output').textContent = 'No data available for the selected combination.';
             }
         }
 
+        // --- Time for Print Functions ---
         function calculateTimeForPrint() {
-            const copies = parseFloat(document.getElementById('copies').value);
+            let copies = parseFloat(document.getElementById('copies').value);
+            let repeatLength = parseFloat(document.getElementById('repeat-length').value);
             const color = parseFloat(document.getElementById('color').value);
+            let pressSpeed = parseFloat(document.getElementById('press-speed').value);
+            const setupTime = parseFloat(document.getElementById('setup-time').value);
 
-            if (!isNaN(copies) && !isNaN(color)) {
-                const length = (copies * color) / 60;
-                document.getElementById('print-output').textContent = `Time: ${length.toFixed(2)} minutes`;
-            } else {
-                document.getElementById('print-output').textContent = 'Please enter valid values for copies and color.';
+            if (isNaN(copies) || isNaN(repeatLength) || isNaN(color) || isNaN(pressSpeed) || isNaN(setupTime)) {
+                document.getElementById('print-output').textContent = 'Please enter valid values for all parameters.';
+                return;
             }
+
+            // Standardize to Imperial for calculation
+            if (currentUnit === 'metric') {
+                repeatLength /= INCHES_TO_MM; // mm to inches
+                pressSpeed /= 0.3048; // MPM to FPM
+            }
+
+            // Total Linear Feet of Material
+            // Total Feet = (Copies * Repeat Length (in) * Number of Colors) / 12 (in/ft)
+            const totalFeet = (copies * repeatLength * color) / 12;
+
+            // Total Run Time (minutes) = (Total Feet / Press Speed (FPM)) + Setup Time (min)
+            const runTimeMinutes = (totalFeet / pressSpeed) + setupTime;
+            
+            // Format output as Hours and Minutes
+            const hours = Math.floor(runTimeMinutes / 60);
+            const minutes = Math.round(runTimeMinutes % 60);
+
+            document.getElementById('print-output').innerHTML = `Total Job Time: <span>${hours} hr ${minutes} min</span>`;
+        }
+        
+        // --- INITIALIZATION ---
+        function initializeCalculators() {
+            // 1. Open default tab
+            openTab({ currentTarget: document.getElementById("defaultOpen") }, 'WindingDiameter');
+            
+            // 2. Set default thickness
+            setThickness();
+
+            // 3. Load Splicing Diameter data
+            fetch('Splicing Diameters - Copy.xlsx')
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    parseExcelData(data);
+                    console.log('Splicing diameter data loaded successfully.');
+                })
+                .catch(error => console.error('Error loading Excel data:', error));
+
+            // 4. Set initial unit labels
+            updateLabels();
         }
 
-        fetch('Splicing Diameters - Copy.xlsx')
-            .then(response => response.arrayBuffer())
-            .then(data => {
-                parseExcelData(data);
-            })
-            .catch(error => console.error('Error loading Excel data:', error));
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        initializeCalculators();
 
-        fetch('TimeForPrint.xlsx')
-            .then(response => response.arrayBuffer())
-            .then(data => {
-                // Handle the TimeForPrint.xlsx file if necessary
-                // For this example, it is not necessary to parse the file since the formula is simple
-            })
-            .catch(error => console.error('Error loading TimeForPrint data:', error));
+        // PWA Registration is kept in the main HTML file, which is okay for simplicity.
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }).catch(error => {
+                    console.log('ServiceWorker registration failed: ', error);
+                });
+        }
     </script>
 </body>
 
