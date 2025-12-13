@@ -200,6 +200,7 @@
             <button class="tablinks" onclick="openTab(event, 'WindingDiameter')" id="defaultOpen">Winding</button>
             <button class="tablinks" onclick="openTab(event, 'SplicingDiameter')">Splicing</button>
             <button class="tablinks" onclick="openTab(event, 'TimeForPrint')">Run Time</button>
+            <button class="tablinks" onclick="openTab(event, 'MaterialNeeded')">Material</button>
         </div>
 
         <div id="WindingDiameter" class="tabcontent">
@@ -283,8 +284,30 @@
             <button type="button" class="calculate-btn" onclick="calculateTimeForPrint()">Calculate Total Time</button>
             <div id="print-output" class="output"></div>
         </div>
-    </div>
+    
+        <div id="MaterialNeeded" class="tabcontent">
+            <h1>Material Consumption</h1>
+            <p style="text-align: center; color: #777;">Estimate the total material (linear feet) needed for the job.</p>
 
+            <label for="material-width"><span id="material-width-label">Web Material Width (inches)</span>:</label>
+            <input type="number" id="material-width" name="material-width" step="0.001" value="">
+
+            <label for="label-width"><span id="label-width-label">Label Width (Across Web - inches)</span>:</label>
+            <input type="number" id="label-width" name="label-width" step="0.001" value="">
+
+            <label for="label-repeat"><span id="label-repeat-label">Label Repeat (Down Web - inches)</span>:</label>
+            <input type="number" id="label-repeat" name="label-repeat" step="0.001" value="">
+
+            <label for="total-labels">Total Labels Required:</label>
+            <input type="number" id="total-labels" name="total-labels" step="1" value="">
+
+            <label for="waste-percent">Percentage of Waste (%):</label>
+            <input type="number" id="waste-percent" name="waste-percent" step="0.1" value="10">
+
+            <button type="button" class="calculate-btn" onclick="calculateMaterialNeeded()">Calculate Material</button>
+            <div id="material-output" class="output"></div>
+        </div>
+    </div>
     <script>
         // --- CONSTANTS AND GLOBAL STATE ---
         let currentUnit = 'imperial';
@@ -322,6 +345,11 @@
             // Time for Print Labels
             document.getElementById('repeat-label').textContent = repeatText;
             document.getElementById('speed-label').textContent = speedText;
+
+            // NEW: Material Needed Labels
+            document.getElementById('material-width-label').textContent = `Web Material Width (${unitText})`;
+            document.getElementById('label-width-label').textContent = `Label Width (Across Web - ${unitText})`;
+            document.getElementById('label-repeat-label').textContent = `Label Repeat (Down Web - ${unitText})`;
         }
 
         function setUnits(unit) {
@@ -346,6 +374,10 @@
                 { id: 'total-length', isLength: true, isTotalLength: true },
                 { id: 'repeat-length', isLength: true },
                 { id: 'press-speed', isSpeed: true },
+                // NEW FIELDS
+                { id: 'material-width', isLength: true },
+                { id: 'label-width', isLength: true },
+                { id: 'label-repeat', isLength: true },
             ];
             
             const conversionFactor = (unit === 'metric') ? INCHES_TO_MM : (1 / INCHES_TO_MM);
@@ -562,12 +594,86 @@
 
             document.getElementById('print-output').innerHTML = `Total Job Time: <span>${hours} hr ${minutes} min</span>`;
         }
+
+        // --- Material Needed Functions ---
+    function calculateMaterialNeeded() {
+        let materialWidth = parseFloat(document.getElementById('material-width').value);
+        let labelWidth = parseFloat(document.getElementById('label-width').value);
+        let labelRepeat = parseFloat(document.getElementById('label-repeat').value);
+        const totalLabels = parseFloat(document.getElementById('total-labels').value);
+        const wastePercent = parseFloat(document.getElementById('waste-percent').value);
         
-        // --- INITIALIZATION ---
-        function initializeCalculators() {
+        if (isNaN(materialWidth) || isNaN(labelWidth) || isNaN(labelRepeat) || isNaN(totalLabels) || isNaN(wastePercent)) {
+            document.getElementById('material-output').textContent = 'Please enter valid values for all parameters.';
+            return;
+        }
+
+        // 1. Standardize inputs to Imperial (inches) for calculation
+        if (currentUnit === 'metric') {
+            materialWidth /= INCHES_TO_MM;
+            labelWidth /= INCHES_TO_MM;
+            labelRepeat /= INCHES_TO_MM;
+        }
+
+        // A. Calculate Lanes (Step): Math.floor ensures we only count full, usable lanes.
+        const lanes = Math.floor(materialWidth / labelWidth);
+        
+        if (lanes === 0) {
+            document.getElementById('material-output').textContent = 'Error: Label Width is wider than Material Width.';
+            return;
+        }
+
+        // B. Calculate Gross Linear Feet (Net Material + Waste)
+        // 1. Total Label Repeat Length (inches)
+        const totalRepeatInches = totalLabels * labelRepeat;
+        
+        // 2. Net Linear Inches, divided by the number of lanes
+        const netLinearInches = totalRepeatInches / lanes;
+        
+        // 3. Convert to Net Linear Feet
+        let netLinearFeet = netLinearInches / 12;
+
+        // 4. Calculate Gross Linear Feet (Add Waste)
+        const wasteFactor = 1 + (wastePercent / 100);
+        const totalGrossFeet = netLinearFeet * wasteFactor;
+        
+        // C. Calculate Fractional Roll Equivalents
+        
+        // Standard Unit: 10,000 feet
+        const rollSize10K = 10000; 
+        const rolls10k = totalGrossFeet / rollSize10K;
+        
+        // Alternate Unit: 5,000 feet (for comparison or smaller inventory)
+        const rollSize5K = 5000; 
+        const rolls5k = totalGrossFeet / rollSize5K;
+
+        // D. Convert Gross Linear Feet back to Metric if needed for display
+        let grossLinearOutput = totalGrossFeet;
+        let outputUnit = 'feet';
+        if (currentUnit === 'metric') {
+            grossLinearOutput /= METERS_TO_FEET; // Feet to Meters
+            outputUnit = 'meters';
+        }
+
+        // E. Format Output
+        const totalRollsOutput = `
+            Total Material: <span>${grossLinearOutput.toFixed(0)} ${outputUnit}</span><br>
+            Lanes (Step): <span>${lanes}</span><br>
+            Equivalent Rolls:<br>
+            - 10,000' Rolls: <span>${rolls10k.toFixed(1)} rolls</span><br>
+            - 5,000' Rolls: <span>${rolls5k.toFixed(1)} rolls</span>
+        `;
+        
+        document.getElementById('material-output').innerHTML = totalRollsOutput;
+    }
+    // --- END NEW FUNCTION ---
+    // --- END NEW FUNCTION ---
+
+    // --- INITIALIZATION ---
+    function initializeCalculators() {
             // 1. Open default tab
             openTab({ currentTarget: document.getElementById("defaultOpen") }, 'WindingDiameter');
-            
+
             // 2. Set default thickness
             setThickness();
 
@@ -597,9 +703,8 @@
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
-        
-        initializeCalculators();
 
+        initializeCalculators();
         // PWA Registration is kept in the main HTML file, which is okay for simplicity.
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
